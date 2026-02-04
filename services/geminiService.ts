@@ -2,14 +2,21 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
 import { TextBlock, TranslationMode } from "../types";
 
+// 模型配置
 const OCR_MODEL = 'gemini-3-flash-preview';
 const REASONING_MODEL = 'gemini-3-flash-preview';
 const TTS_MODEL = 'gemini-2.5-flash-preview-tts';
 
+/**
+ * 严格遵循指令：始终使用 process.env.API_KEY
+ * 建议在 Vercel Settings -> Environment Variables 中：
+ * Key: API_KEY
+ * Value: 你的 API 密钥
+ */
 const getAIClient = () => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("API_KEY is missing. Please set it in your environment variables.");
+    throw new Error("API_KEY_MISSING: 未检测到 API_KEY。请确保在 Vercel 后台设置了名为 API_KEY 的变量，并点击了 Redeploy 重新部署。");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -57,7 +64,7 @@ export const analyzeImage = async (base64Image: string): Promise<TextBlock[]> =>
     const text = response.text || '[]';
     return JSON.parse(text);
   } catch (e) {
-    console.error("Failed to parse OCR result", e);
+    console.error("OCR 解析失败:", e);
     return [];
   }
 };
@@ -93,7 +100,7 @@ export const generateSpeech = async (text: string): Promise<ArrayBuffer> => {
   });
 
   const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  if (!base64Audio) throw new Error("No audio data returned from Gemini");
+  if (!base64Audio) throw new Error("TTS 失败: 未返回音频数据");
 
   return decodeBase64(base64Audio);
 };
