@@ -7,16 +7,11 @@ const OCR_MODEL = 'gemini-3-flash-preview';
 const REASONING_MODEL = 'gemini-3-flash-preview';
 const TTS_MODEL = 'gemini-2.5-flash-preview-tts';
 
-/**
- * 严格遵循指令：始终使用 process.env.API_KEY
- * 建议在 Vercel Settings -> Environment Variables 中：
- * Key: API_KEY
- * Value: 你的 API 密钥
- */
+
 const getAIClient = () => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = (import.meta as { env?: { VITE_API_KEY?: string } }).env?.VITE_API_KEY;
   if (!apiKey) {
-    throw new Error("API_KEY_MISSING: 未检测到 API_KEY。请确保在 Vercel 后台设置了名为 API_KEY 的变量，并点击了 Redeploy 重新部署。");
+    throw new Error("API_KEY_MISSING: 未检测到 API 密钥。请设置环境变量 VITE_API_KEY（Vercel/本地），并重新构建部署。");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -83,7 +78,7 @@ export const processText = async (text: string, mode: TranslationMode): Promise<
   return response.text?.trim() || text;
 };
 
-export const generateSpeech = async (text: string): Promise<ArrayBuffer> => {
+export const generateSpeech = async (text: string): Promise<Uint8Array> => {
   const ai = getAIClient();
   
   const response = await ai.models.generateContent({
