@@ -85,23 +85,79 @@ export async function processText(
 export async function generateSpeech(text: string): Promise<Uint8Array> {
   const ai = getAIClient();
 
-  const response = await ai.models.generateContent({
-    model: TTS_MODEL,
-    contents: [{ parts: [{ text }] }],
-    config: {
-      responseModalities: [Modality.AUDIO],
-      speechConfig: {
-        voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: "Kore" },
+  // 验证输入文本
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    throw new Error(`TTS 失败: 输入文本为空或无效。text: "${text}"`);
+  }
+
+  const cleanText = text.trim();
+  console.log(`TTS Request: text="${cleanText}", length=${cleanText.length}`);
+
+  try {
+    // 使用非流式 API 获取 TTS 音频数据
+    // TTS 模型只需要纯文本，不需要 parts 格式
+    const response = await ai.models.generateContent({
+      model: TTS_MODEL,
+      contents: cleanText,
+      config: {
+        responseModalities: [Modality.AUDIO],
+        speechConfig: {
+          voiceConfig: {
+            prebuiltVoiceConfig: { voiceName: "Kore" },
+          },
         },
       },
-    },
-  });
+    });
 
-  const base64Audio =
-    response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-  if (!base64Audio) throw new Error("TTS 失败: 未返回音频数据");
+    console.log("TTS Response:", JSON.stringify({
+      hasCandidates: !!response.candidates,
+      candidatesLength: response.candidates?.length,
+      firstCandidate: response.candidates?.[0] ? {
+        finishReason: response.candidates[0].finishReason,
+        hasContent: !!response.candidates[0].content,
+        contentKeys: response.candidates[0].content ? Object.keys(response.candidates[0].content) : [],
+        hasParts: !!response.candidates[0].content?.parts,
+        partsLength: response.candidates[0].content?.parts?.length,
+        firstPart: response.candidates[0].content?.parts?.[0] ? {
+          hasInlineData: !!response.candidates[0].content.parts[0].inlineData,
+          hasData: !!response.candidates[0].content.parts[0].inlineData?.data,
+          dataLength: response.candidates[0].content.parts[0].inlineData?.data?.length,
+        } : null,
+      } : null,
+    }, null, 2));
 
-  const buf = Buffer.from(base64Audio, "base64");
-  return new Uint8Array(buf);
+    const candidate = response.candidates?.[0];
+    if (!candidate?.content?.parts) {
+      throw new Error(`TTS 失败: 响应中没有内容。finishReason: ${candidate?.finishReason || "unknown"}`);
+    }
+
+    // 收集所有音频数据
+    const audioChunks: Uint8Array[] = [];
+    for (const part of candidate.content.parts) {
+      if (part.inlineData?.data) {
+        const buf = Buffer.from(part.inlineData.data, "base64");
+        audioChunks.push(new Uint8Array(buf));
+        console.log(`Found audio chunk, size: ${buf.length} bytes`);
+      }
+    }
+
+    if (audioChunks.length === 0) {
+      throw new Error(`TTS 失败: 响应中未找到音频数据。finishReason: ${candidate.finishReason}`);
+    }
+
+    // 合并所有音频块
+    const totalLength = audioChunks.reduce((sum, chunk) => sum + chunk.length, 0);
+    const result = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of audioChunks) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+
+    console.log(`TTS 成功: 总音频大小 ${totalLength} 字节`);
+    return result;
+  } catch (err) {
+    console.error("generateSpeech error:", err);
+    throw err;
+  }
 }

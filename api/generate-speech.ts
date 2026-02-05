@@ -17,11 +17,23 @@ export async function POST(request: Request) {
       headers: { "Content-Type": "application/octet-stream" },
     });
   } catch (err: unknown) {
+    console.error("TTS Error:", err);
     const message = err instanceof Error ? err.message : "合成失败";
-    const isKeyError = String(message).includes("API_KEY");
+    const errorStr = String(err);
+    const isKeyError = errorStr.includes("API_KEY");
+    const isTtsError = errorStr.includes("TTS") || errorStr.includes("audio") || errorStr.includes("400");
+    
+    let errorMsg = message;
+    if (isTtsError && errorStr.includes("generate text")) {
+      errorMsg = "TTS 配置错误：模型尝试生成文本而不是音频。请检查 TTS 模型配置。";
+    } else if (isKeyError) {
+      errorMsg = "配置错误：API_KEY 缺失。";
+    }
+    
     return new Response(
       JSON.stringify({
-        error: isKeyError ? "配置错误：API_KEY 缺失。" : message,
+        error: errorMsg,
+        details: isTtsError ? errorStr : undefined,
       }),
       { status: isKeyError ? 503 : 500, headers: { "Content-Type": "application/json" } }
     );
