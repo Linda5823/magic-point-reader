@@ -21,6 +21,7 @@ const App: React.FC = () => {
 
     setError(null);
     setStatus(AppStatus.UPLOADING);
+    setBlocks([]);
     setActiveBlock(null);
 
     const reader = new FileReader();
@@ -34,10 +35,13 @@ const App: React.FC = () => {
         setBlocks(results);
         setStatus(AppStatus.READY);
       } catch (err: any) {
-        console.error(err);
-        const msg = err.message?.includes('API_KEY') 
-          ? "配置错误：未检测到 API_KEY，请检查环境变量设置。" 
-          : "无法识别图片中的文字，请检查网络或图片质量。";
+        console.error("Image analysis error:", err);
+        const errMsg = err?.message || String(err);
+        const msg = errMsg.includes('API_KEY') 
+          ? "Configuration Error: API_KEY not detected. Please check Vercel environment variables." 
+          : errMsg.includes('fetch') || errMsg.includes('network') || errMsg.includes('Failed to fetch')
+          ? `Network Error: ${errMsg}. Please check your connection and try again.`
+          : `Analysis Error: ${errMsg}`;
         setError(msg);
         setStatus(AppStatus.ERROR);
       }
@@ -46,7 +50,7 @@ const App: React.FC = () => {
   };
 
   const handleTextClick = useCallback(async (text: string, block: TextBlock) => {
-    if (status === AppStatus.SPEAKING || status === AppStatus.TRANSLATING) {
+    if (status === AppStatus.SPEAKING || status === AppStatus.TRANSLATING || status === AppStatus.ANALYZING) {
       currentSourceRef.current?.stop();
     }
 
@@ -82,7 +86,7 @@ const App: React.FC = () => {
       source.start();
     } catch (err: any) {
       console.error(err);
-      setError(err.message?.includes('API_KEY') ? "配置错误：API_KEY 缺失。" : "处理失败，请重试。");
+      setError("Processing failed. Please try again.");
       setStatus(AppStatus.READY);
       setActiveBlock(null);
     }
@@ -93,21 +97,26 @@ const App: React.FC = () => {
       <header className="max-w-4xl w-full text-center mb-10">
         <h1 className="text-4xl font-extrabold text-slate-800 mb-4 tracking-tight flex items-center justify-center gap-2">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500">Magic Point-to-Read</span>
-          <span className="text-3xl">🪄</span>
+          <span className="text-3xl animate-bounce">🪄</span>
         </h1>
-        <p className="text-lg text-slate-600">
-          上传图片，点击文字，Gemini 为你朗读和翻译。
-        </p>
+        <div className="space-y-2">
+          <p className="text-lg text-slate-600">
+            Upload any reading material and click on text to hear it spoken or translated.
+          </p>
+          <p className="text-md text-slate-400 font-medium">
+            上传图片，点击文字，Gemini 为你朗读和翻译
+          </p>
+        </div>
       </header>
 
       <main className="max-w-4xl w-full flex flex-col items-center">
-        {/* Mode Selector */}
         {imageUrl && (
-          <div className="flex bg-white p-1 rounded-xl shadow-sm mb-6 border border-slate-200">
+          <div className="flex bg-white p-1 rounded-xl shadow-sm mb-6 border border-slate-200 sticky top-4 z-30">
             {[
-              { id: 'ORIGINAL', label: '原声点读' },
-              { id: 'TRANSLATE_EN', label: '译为英文' },
-              { id: 'TRANSLATE_ZH', label: '译为中文' },
+              { id: 'ORIGINAL', label: 'Read Original' },
+              { id: 'TRANSLATE_EN', label: 'To English' },
+              { id: 'TRANSLATE_ZH', label: 'To Chinese' },
+              { id: 'TRANSLATE_ES', label: 'To Spanish' },
             ].map((m) => (
               <button
                 key={m.id}
@@ -126,49 +135,54 @@ const App: React.FC = () => {
 
         <div className={`w-full bg-white rounded-2xl shadow-sm border p-8 mb-8 transition-all ${!imageUrl ? 'border-dashed border-2' : ''}`}>
           {!imageUrl ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-3xl flex items-center justify-center mb-6 rotate-3">
-                <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="w-24 h-24 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-8 relative">
+                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
+                <div className="absolute inset-0 rounded-full border-2 border-blue-200 animate-ping opacity-25"></div>
               </div>
-              <label className="cursor-pointer bg-slate-900 hover:bg-black text-white font-semibold py-3 px-10 rounded-xl transition-all shadow-xl active:scale-95">
-                上传学习素材
+              <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-12 rounded-2xl transition-all shadow-xl shadow-blue-200 active:scale-95 text-lg">
+                Upload Image
                 <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
               </label>
-              <p className="mt-4 text-slate-400 text-sm">支持绘本、路牌、课件等图片</p>
+              <p className="mt-6 text-slate-400 text-sm italic">Try uploading storybooks, newspapers, or signs.</p>
             </div>
           ) : (
             <div className="flex flex-col items-center">
-              <div className="flex justify-between w-full mb-4 items-center">
+              <div className="flex justify-between w-full mb-6 items-center">
                 <div className="flex items-center space-x-3">
-                  <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                    status === AppStatus.ANALYZING || status === AppStatus.TRANSLATING ? 'bg-amber-100 text-amber-700' :
-                    status === AppStatus.SPEAKING ? 'bg-green-100 text-green-700 animate-pulse' :
-                    'bg-blue-100 text-blue-700'
+                  <div className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest ${
+                    status === AppStatus.ANALYZING ? 'bg-indigo-600 text-white animate-pulse' :
+                    status === AppStatus.SPEAKING ? 'bg-green-500 text-white' :
+                    'bg-slate-100 text-slate-600'
                   }`}>
-                    {status === AppStatus.UPLOADING && 'Uploading'}
-                    {status === AppStatus.ANALYZING && 'Analyzing'}
-                    {status === AppStatus.READY && 'Ready to play'}
-                    {status === AppStatus.TRANSLATING && 'Translating'}
-                    {status === AppStatus.SPEAKING && 'Speaking'}
-                    {status === AppStatus.ERROR && 'Error'}
+                    {status === AppStatus.ANALYZING && (
+                      <span className="flex items-center gap-2">
+                        <svg className="animate-spin h-3 w-3 text-white" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Reading with Gemini...
+                      </span>
+                    )}
+                    {status === AppStatus.READY && 'Ready'}
+                    {status === AppStatus.SPEAKING && '🔊 Speaking'}
+                    {status === AppStatus.TRANSLATING && 'Translating...'}
                   </div>
-                  {status === AppStatus.READY && (
-                    <span className="text-xs text-slate-400">检测到 {blocks.length} 块文本</span>
-                  )}
                 </div>
                 <button 
                   onClick={() => { setImageUrl(null); setBlocks([]); setStatus(AppStatus.IDLE); }}
-                  className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                  className="px-3 py-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all text-sm font-medium"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                  Change Image
                 </button>
               </div>
 
               {error && (
-                <div className="w-full bg-red-50 text-red-600 p-4 rounded-xl mb-4 text-sm border border-red-100 flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                <div className="w-full bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm border border-red-100 flex items-center gap-3">
+                  <svg className="w-5 h-5 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                   {error}
                 </div>
               )}
@@ -178,17 +192,22 @@ const App: React.FC = () => {
                 blocks={blocks} 
                 onTextClick={handleTextClick} 
                 activeBlock={activeBlock}
+                isAnalyzing={status === AppStatus.ANALYZING}
               />
               
-              <div className="mt-8 grid grid-cols-2 gap-4 w-full text-sm">
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <p className="text-slate-400 mb-1">当前文字</p>
-                  <p className="text-slate-800 font-medium truncate">{activeBlock?.text || '点击上方文字...'}</p>
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+                <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                  <p className="text-slate-400 text-xs font-bold uppercase mb-2">Original Text</p>
+                  <p className="text-slate-800 font-medium min-h-[1.5rem] break-words">
+                    {activeBlock?.text || (status === AppStatus.ANALYZING ? 'Waiting for analysis...' : 'Click any highlighted text block')}
+                  </p>
                 </div>
-                <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                  <p className="text-blue-400 mb-1">翻译结果</p>
-                  <p className="text-blue-800 font-medium truncate">
-                    {status === AppStatus.TRANSLATING ? '翻译中...' : (mode === 'ORIGINAL' ? '原样输出' : '已就绪')}
+                <div className="p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
+                  <p className="text-blue-400 text-xs font-bold uppercase mb-2">Voice Output / Translation</p>
+                  <p className="text-blue-800 font-medium min-h-[1.5rem]">
+                    {status === AppStatus.TRANSLATING ? 'Processing translation...' : 
+                     status === AppStatus.SPEAKING ? 'Playing high-quality audio...' : 
+                     (mode === 'ORIGINAL' ? 'Ready to speak' : 'Ready to translate & speak')}
                   </p>
                 </div>
               </div>
@@ -197,10 +216,17 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <footer className="mt-auto py-8 text-slate-400 text-sm flex items-center gap-4">
-        <span>Powering the future with Gemini 3</span>
-        <span className="w-1 h-1 bg-slate-200 rounded-full"></span>
-        <a href="https://gemini3.devpost.com/" target="_blank" className="hover:text-blue-500 underline">Join the Competition</a>
+      <footer className="mt-auto py-8 text-slate-400 text-xs flex flex-col items-center gap-2">
+        <div className="flex items-center gap-3">
+          <span>Powered by Gemini 3 Flash & 2.5 TTS</span>
+          <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+          <span>Multimodal Learning Assistant</span>
+        </div>
+        <div className="flex gap-4">
+            <a href="https://ai.google.dev" target="_blank" className="hover:text-blue-500 transition-colors">Gemini API</a>
+            <span className="text-slate-200">|</span>
+            <a href="https://github.com" target="_blank" className="hover:text-blue-500 transition-colors">GitHub Repository</a>
+        </div>
       </footer>
     </div>
   );

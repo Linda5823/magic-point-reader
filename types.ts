@@ -25,4 +25,4 @@ export enum AppStatus {
   ERROR = 'ERROR'
 }
 
-export type TranslationMode = 'ORIGINAL' | 'TRANSLATE_EN' | 'TRANSLATE_ZH';
+export type TranslationMode = 'ORIGINAL' | 'TRANSLATE_EN' | 'TRANSLATE_ZH' | 'TRANSLATE_ES';

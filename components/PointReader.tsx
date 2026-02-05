@@ -7,9 +7,10 @@ interface PointReaderProps {
   blocks: TextBlock[];
   onTextClick: (text: string, block: TextBlock) => void;
   activeBlock: TextBlock | null;
+  isAnalyzing: boolean;
 }
 
-const PointReader: React.FC<PointReaderProps> = ({ imageUrl, blocks, onTextClick, activeBlock }) => {
+const PointReader: React.FC<PointReaderProps> = ({ imageUrl, blocks, onTextClick, activeBlock, isAnalyzing }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const [imgSize, setImgSize] = useState({ width: 0, height: 0 });
@@ -66,9 +67,18 @@ const PointReader: React.FC<PointReaderProps> = ({ imageUrl, blocks, onTextClick
         alt="Upload target"
         className="max-w-full h-auto block"
       />
+
+      {/* 扫描动画层 */}
+      {isAnalyzing && (
+        <>
+          <div className="scan-overlay" />
+          <div className="scanner-line" />
+        </>
+      )}
+
       
-      {/* Visual Debug / Highlights */}
-      {blocks.map((block, idx) => {
+      {/* 文本区域高亮 */}
+      {!isAnalyzing && blocks.map((block, idx) => {
         const [ymin, xmin, ymax, xmax] = block.box_2d;
         const left = (xmin / 1000) * 100;
         const top = (ymin / 1000) * 100;

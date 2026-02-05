@@ -1,8 +1,6 @@
 import { processText as processTextWithGemini } from "./lib/gemini.js";
 import type { TranslationMode } from "../types.js";
 
-export const config = { runtime: "nodejs" };
-
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as { text?: string; mode?: TranslationMode };

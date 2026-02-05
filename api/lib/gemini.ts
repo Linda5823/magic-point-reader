@@ -66,7 +66,13 @@ export async function processText(
   if (mode === "ORIGINAL") return text;
 
   const ai = getAIClient();
-  const targetLang = mode === "TRANSLATE_EN" ? "English" : "Chinese";
+  const langMap: Record<TranslationMode, string> = {
+    ORIGINAL: "",
+    TRANSLATE_EN: "English",
+    TRANSLATE_ZH: "Chinese",
+    TRANSLATE_ES: "Spanish",
+  };
+  const targetLang = langMap[mode] || "English";
 
   const response = await ai.models.generateContent({
     model: REASONING_MODEL,

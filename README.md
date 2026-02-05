@@ -27,14 +27,22 @@ An interactive web application that turns any image into a "point-to-read" learn
 
 3. **Set Environment Variable**:
    - **部署到 Vercel**：在项目 Settings → Environment Variables 中配置 `API_KEY`（你的 Gemini API 密钥），密钥仅保存在服务端，不会暴露给前端。
-   - **本地完整测试**（前端 + API）：安装 [Vercel CLI](https://vercel.com/cli) 后执行 `vercel dev`，并在项目根目录创建 `.env`，内容为 `API_KEY=your_gemini_api_key`。
-   - **仅本地跑前端**：`npm run dev`；此时需有后端 API（例如用 `vercel dev` 一起跑）。
+   - **本地开发**：安装 [Vercel CLI](https://vercel.com/cli) 后，在项目根目录创建 `.env` 文件，内容为 `API_KEY=your_gemini_api_key`。
 
-4. **Run development server**:
+4. **安装 Vercel CLI**（如果还没有）：
    ```bash
-   npm run dev
+   npm install
    ```
-   或同时跑前端与 API（推荐）：`vercel dev`
+   这会自动安装 `vercel` CLI 作为开发依赖。
+
+5. **Run development server**:
+   ```bash
+   # ⚠️ 重要：本地开发必须使用 vercel dev（会同时启动前端和 API）
+   npm run dev:full
+   # 或者直接使用：npx vercel dev
+   ```
+   
+   **注意**：不要使用 `npm run dev`，因为它只启动前端，API 路由不会运行，会导致 "Failed to recognize text" 错误。
 
 ## 🛠 Tech Stack | 技术栈
 

@@ -3,19 +3,26 @@ import type { TextBlock, TranslationMode } from "../types";
 const API_BASE = "";
 
 async function apiPost<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE}/api${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const isJson = res.headers.get("Content-Type")?.includes("application/json");
-  const text = await res.text();
-  const data = isJson && text ? (JSON.parse(text) as { error?: string }) : null;
-  const errMsg = data?.error ?? (res.ok ? undefined : text || res.statusText);
-  if (!res.ok || errMsg) {
-    throw new Error(errMsg ?? "请求失败");
+  try {
+    const res = await fetch(`${API_BASE}/api${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const isJson = res.headers.get("Content-Type")?.includes("application/json");
+    const text = await res.text();
+    const data = isJson && text ? (JSON.parse(text) as { error?: string }) : null;
+    const errMsg = data?.error ?? (res.ok ? undefined : text || res.statusText);
+    if (!res.ok || errMsg) {
+      throw new Error(errMsg ?? `API request failed: ${res.status} ${res.statusText}`);
+    }
+    return (data ?? {}) as T;
+  } catch (err) {
+    if (err instanceof TypeError && err.message.includes('fetch')) {
+      throw new Error(`Network error: Cannot reach API endpoint /api${path}. Please check if the server is running.`);
+    }
+    throw err;
   }
-  return (data ?? {}) as T;
 }
 
 export const analyzeImage = async (base64Image: string): Promise<TextBlock[]> => {

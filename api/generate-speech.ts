@@ -1,7 +1,5 @@
 import { generateSpeech as generateSpeechWithGemini } from "./lib/gemini.js";
 
-export const config = { runtime: "nodejs" };
-
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as { text?: string };
