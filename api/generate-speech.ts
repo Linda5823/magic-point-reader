@@ -1,4 +1,4 @@
-import { generateSpeech as generateSpeechWithGemini } from "./lib/gemini";
+import { generateSpeech as generateSpeechWithGemini } from "./lib/gemini.js";
 
 export const config = { runtime: "nodejs" };
 
@@ -13,7 +13,8 @@ export async function POST(request: Request) {
       );
     }
     const audio = await generateSpeechWithGemini(text);
-    return new Response(audio, {
+    const audioBuffer = audio.buffer.slice(audio.byteOffset, audio.byteOffset + audio.byteLength) as ArrayBuffer;
+    return new Response(audioBuffer, {
       status: 200,
       headers: { "Content-Type": "application/octet-stream" },
     });

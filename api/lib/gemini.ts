@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type, Modality } from "@google/genai";
-import type { TextBlock, TranslationMode } from "../../types";
+import type { TextBlock, TranslationMode } from "../../types.js";
 
 const OCR_MODEL = "gemini-3-flash-preview";
 const REASONING_MODEL = "gemini-3-flash-preview";

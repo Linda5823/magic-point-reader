@@ -1,5 +1,5 @@
-import { processText as processTextWithGemini } from "./lib/gemini";
-import type { TranslationMode } from "../types";
+import { processText as processTextWithGemini } from "./lib/gemini.js";
+import type { TranslationMode } from "../types.js";
 
 export const config = { runtime: "nodejs" };
 

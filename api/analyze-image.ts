@@ -1,4 +1,4 @@
-import { analyzeImage as analyzeImageWithGemini } from "./lib/gemini";
+import { analyzeImage as analyzeImageWithGemini } from "./lib/gemini.js";
 
 export const config = { runtime: "nodejs" };
 
