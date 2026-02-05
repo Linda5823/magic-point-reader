@@ -95,10 +95,11 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col items-center py-10 px-4">
       <header className="max-w-4xl w-full text-center mb-10">
-        <h1 className="text-4xl font-extrabold text-slate-800 mb-4 tracking-tight flex items-center justify-center gap-2">
+        <h1 className="text-4xl font-extrabold text-slate-800 mb-2 tracking-tight flex items-center justify-center gap-2">
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-500">Magic Point-to-Read</span>
           <span className="text-3xl animate-bounce">🪄</span>
         </h1>
+        <p className="text-lg text-slate-500 mb-4">魔法点读笔</p>
         <div className="space-y-2">
           <p className="text-lg text-slate-600">
             Upload any reading material and click on text to hear it spoken or translated.
@@ -143,11 +144,16 @@ const App: React.FC = () => {
                 </svg>
                 <div className="absolute inset-0 rounded-full border-2 border-blue-200 animate-ping opacity-25"></div>
               </div>
-              <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-12 rounded-2xl transition-all shadow-xl shadow-blue-200 active:scale-95 text-lg">
-                Upload Image
+              <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-12 rounded-2xl transition-all shadow-xl shadow-blue-200 active:scale-95 text-lg flex flex-col items-center">
+                <span>Upload Image</span>
+                <span className="text-sm font-normal mt-1 opacity-90">上传图片</span>
                 <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
               </label>
-              <p className="mt-6 text-slate-400 text-sm italic">Try uploading storybooks, newspapers, or signs.</p>
+              <p className="mt-6 text-slate-400 text-sm italic">
+                <span>Try uploading storybooks, newspapers, or signs.</span>
+                <br />
+                <span className="text-xs">试试上传绘本、路牌或标识牌。</span>
+              </p>
             </div>
           ) : (
             <div className="flex flex-col items-center">
